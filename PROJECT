@@ -1,0 +1,27 @@
+软件产品的生命周期
+1.	问题定义
+2.	可行性研究
+3.	需求分析（阶段评审：需求评审）
+4.	产品设计（阶段评审：产品设计评审）
+5.	开发设计（阶段评审：开发设计评审）
+6.	编码实现（阶段评审：Review代码）
+7.	软件测试（阶段评审：测试用例评审）
+8.	产品验收与发布
+9.	发布后的产品维护
+
+Scrum相关概念
+1.	产品backlog: 产品待办列表，指需求清单
+2.	User Story: 用户故事，指一条需求
+3.	EPIC：比User Story更大一点的需求
+4.	Sprint：一个开发周期，或者一个迭代
+5.	Sprint backlog：Sprint 产品待办事项列表
+6.	Sprint Task：实现一条需求需要做的一个技术任务
+关系
+1.	（产品backlog）包含N个（User Story）
+2.	（Sprint backlog）包含N个（Sprint Task）
+3.	（User Story）对应N个（Sprint Task）
+User Story的产生是：问题定义，可行性研究，需求分析的结果
+Sprint Task产生是：产品设计的结果
+开发设计，编码实现，软件测试都是针对一个具体的Sprint Task来的
+而产品验收与发布（包括一部分测试）还是从一个User Story的角度来的
+
