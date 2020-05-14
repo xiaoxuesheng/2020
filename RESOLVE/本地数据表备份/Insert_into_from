@@ -1,0 +1,2 @@
+使用 insert into tableA select * from tableB 语句时，一定要确保 tableB 后面的 where，order 或者其他条件，都需要有对应的索引，
+来避免出现 tableB 全部记录被锁定的情况。
