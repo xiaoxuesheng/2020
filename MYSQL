@@ -1,0 +1,13 @@
+MYSQL 特性
+8.0.0
+1.默认字符集由latin1变为utf8mb4
+2.支持降序索引
+3.group by 不再隐式排序
+4.json特性增强
+5.innodb select for update跳过锁等待
+select ... for update，select ... for share(8.0新增语法) 添加 NOWAIT、SKIP LOCKED语法，跳过锁等待，或者跳过锁定。
+在5.7及之前的版本，select...for update，如果获取不到锁，会一直等待，直到innodb_lock_wait_timeout超时。
+6.支持窗口函数（over）和公用表表达式（with）
+
+8.0.20
+1.hash join ：缓存join数据，速度快
