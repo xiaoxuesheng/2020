@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hjj.toy.laboratory.dao.ToyDao">
+
+
+    <resultMap id="lhm" type="java.util.LinkedHashMap"/>
+
+    <resultMap id="hm" type="java.util.HashMap"/>
+
+    <select id="queryData" resultMap="lhm">
+        select ID,TOY_NAME from data_toy
+    </select>
+
+
+
+</mapper>

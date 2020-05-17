@@ -1,0 +1,147 @@
+package com.hjj.toy.util.bigdataread.bigxecel2007up;
+
+
+
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.xssf.eventusermodel.XSSFReader;
+import org.apache.poi.xssf.model.SharedStringsTable;
+import org.apache.poi.xssf.usermodel.XSSFRichTextString;
+import org.xml.sax.Attributes;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.DefaultHandler;
+import org.xml.sax.helpers.XMLReaderFactory;
+
+import java.io.InputStream;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+/**
+ * excel2007文件格式与之前版本不同，之前版本采用的是微软自己的存储格式。07版内容的存储采用XML格式，所以，理所当然的，对大数据量的 xlsx文件的读取采用的也是XML的处理方式SAX。
+ 同之前的版本一样，大数据量文件的读取采用的是事件模型eventusermodel。usermodel模式需要将文件一次性全部读到内存中，07版的 既然采用的存储模式是xml，解析用的DOM方式也是如此，这种模式操作简单，容易上手，但是对于大量数据占用的内存也是相当可观，在Eclipse中经 常出现内存溢出。
+ 下面就是采用eventusermodel对07excel文件读取。
+ 同上篇，我将当前行的单元格数据存储到List中，抽象出 optRows 方法，该方法会在每行末尾时调用，方法参数为当前行索引curRow(int型)及存有行内单元格数据的List。继承类只需实现该行级方法即可。
+
+ 经测试，对12万条数据，7M大小的文件也能正常运行。无需设置vm的内存空间。
+ */
+public abstract class XxlsAbstract extends DefaultHandler {
+
+    private SharedStringsTable sst;
+    private String lastContents;
+    private boolean nextIsString;
+
+    private int sheetIndex = -1;
+    private List<String> rowlist = new ArrayList<String>();
+    private int curRow = 0;
+    private int curCol = 0;
+
+    //excel记录行操作方法，以行索引和行元素列表为参数，对一行元素进行操作，元素为String类型
+//  public abstract void optRows(int curRow, List<String> rowlist) throws SQLException ;
+
+    //excel记录行操作方法，以sheet索引，行索引和行元素列表为参数，对sheet的一行元素进行操作，元素为String类型
+    public abstract void optRows(int sheetIndex,int curRow, List<String> rowlist) throws SQLException;
+
+    //只遍历一个sheet，其中sheetId为要遍历的sheet索引，从1开始，1-3
+    public void processOneSheet(String filename,int sheetId) throws Exception {
+        OPCPackage pkg = OPCPackage.open(filename);
+        XSSFReader r = new XSSFReader(pkg);
+        SharedStringsTable sst = r.getSharedStringsTable();
+
+        XMLReader parser = fetchSheetParser(sst);
+
+        // rId2 found by processing the Workbook
+        // 根据 rId# 或 rSheet# 查找sheet
+        InputStream sheet2 = r.getSheet("rId"+sheetId);
+        sheetIndex++;
+        InputSource sheetSource = new InputSource(sheet2);
+        parser.parse(sheetSource);
+        sheet2.close();
+    }
+
+    /**
+     * 遍历 excel 文件
+     */
+    public void process(String filename) throws Exception {
+        OPCPackage pkg = OPCPackage.open(filename);
+        XSSFReader r = new XSSFReader(pkg);
+        SharedStringsTable sst = r.getSharedStringsTable();
+
+        XMLReader parser = fetchSheetParser(sst);
+
+        Iterator<InputStream> sheets = r.getSheetsData();
+        while (sheets.hasNext()) {
+            curRow = 0;
+            sheetIndex++;
+            InputStream sheet = sheets.next();
+            InputSource sheetSource = new InputSource(sheet);
+            parser.parse(sheetSource);
+            sheet.close();
+        }
+    }
+
+    public XMLReader fetchSheetParser(SharedStringsTable sst) throws SAXException {
+        XMLReader parser = XMLReaderFactory.createXMLReader("org.apache.xerces.parsers.SAXParser");
+        this.sst = sst;
+        parser.setContentHandler(this);
+        return parser;
+    }
+
+    public void startElement(String uri, String localName, String name, Attributes attributes) throws SAXException {
+        // c => 单元格
+        if (name.equals("c")) {
+            // 如果下一个元素是 SST 的索引，则将nextIsString标记为true
+            String cellType = attributes.getValue("t");
+            if (cellType != null && cellType.equals("s")) {
+                nextIsString = true;
+            } else {
+                nextIsString = false;
+            }
+        }
+        // 置空
+        lastContents = "";
+    }
+
+    public void endElement(String uri, String localName, String name) throws SAXException {
+        // 根据SST的索引值的到单元格的真正要存储的字符串
+        // 这时characters()方法可能会被调用多次
+        if (nextIsString) {
+            try {
+                int idx = Integer.parseInt(lastContents);
+                lastContents = new XSSFRichTextString(sst.getEntryAt(idx))
+                        .toString();
+            } catch (Exception e) {
+
+            }
+        }
+
+        // v => 单元格的值，如果单元格是字符串则v标签的值为该字符串在SST中的索引
+        // 将单元格内容加入rowlist中，在这之前先去掉字符串前后的空白符
+        if (name.equals("v")) {
+            String value = lastContents.trim();
+            value = value.equals("")?" ":value;
+            rowlist.add(curCol, value);
+            curCol++;
+        }else {
+            //如果标签名称为 row ，这说明已到行尾，调用 optRows() 方法
+            if (name.equals("row")) {
+                try {
+                    optRows(sheetIndex,curRow,rowlist);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                rowlist.clear();
+                curRow++;
+                curCol = 0;
+            }
+        }
+    }
+
+    public void characters(char[] ch, int start, int length)
+            throws SAXException {
+        //得到单元格内容的值
+        lastContents += new String(ch, start, length);
+    }
+}

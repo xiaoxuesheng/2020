@@ -1,0 +1,59 @@
+《使用MDC为Logback slf4 日志记录线程ID，区分每次执行的会话日志》
+
+在线程执行第一行代码之前放入变量值
+MDC.put("ThreadID", java.util.UUID.randomUUID().toString().replaceAll("-", "").toUpperCase());
+然后在 （以logback为例） 中使用通配符就可以输出这个值，配置片段如下：
+注意留意其中的 {ThreadID}
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>
+                %d|%thread|%X{ThreadID}|%-5level|%logger{65}|%msg%n
+            </pattern>
+        </encoder>
+现在又有一个问题，如何让线程在执行第一行（相对）代码的时候使用 MDC.put 加入变量值呢？
+使用 Filter、MVC 拦截器（Interceptor）。
+特别注意：在开始的地方加入ID，同样需要在线程结束的时候删除该ID，因为线程在线程池里，如果不在执行完业务代码后删除ThreadID，那么该线程下次被使用的时候ThreadID还是存在的，就达不到我们预期的效果了。
+
+/**
+ * 日志拦截器
+ */
+public class LogInterceptor implements HandlerInterceptorAdapter {
+
+    /**
+     * 会话ID
+     */
+    private final static String SESSION_TOKEN_KEY = "sessionTokenId";
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // 放SessionId
+        String token = java.util.UUID.randomUUID().toString().replaceAll("-", "").toUpperCase();
+        MDC. put(SESSION_TOKEN_KEY, token);
+        return true;
+    }
+
+
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex)
+            throws Exception {
+        // 最后执行MDC删除
+        MDC. remove(SESSION_TOKEN_KEY);
+    }
+}
+/**
+ * 系统中配置
+ */
+@Configuration
+public class InterceptorConfig extends WebMvcConfigurerAdapter {
+
+    @Bean
+    public LogInterceptor getLogInterceptor() {
+        return new LogInterceptor();
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        //注册自定义拦截器，添加拦截路径和排除拦截路径
+        registry.addInterceptor(getLogInterceptor()).addPathPatterns("/**");
+    }
+}

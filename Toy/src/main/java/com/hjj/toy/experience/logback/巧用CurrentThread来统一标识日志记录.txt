@@ -1,0 +1,19 @@
+《巧用CurrentThread.Name来统一标识日志记录（java-logback篇）》
+
+public BaseResponse invoke(String requestJSON, BaseRequest baseRequest) throws Exception {
+    String threadName = String.format("%s_%s_%s",
+            baseRequest.getMethod(),
+            new SimpleDateFormat("HHmmssS").format(new Date()),
+            UUID.randomUUID().toString().toUpperCase().substring(0, 5));
+    Thread.currentThread().setName(threadName);
+
+    log.info("#IPayCenterFacadeImpl,调用服务：{}", baseRequest.getMethod());
+    log.info("#IPayCenterFacadeImpl,请求参数：{}", requestJSON);
+    //1.获取API接口实现
+    IPayCenterApi payCenterApi = (IPayCenterApi) payCenterServiceFactory.getService(baseRequest.getMethod());
+
+    //2.处理业务逻辑
+    BaseResponse result = payCenterApi.handle(requestJSON);
+
+    return result;
+}
