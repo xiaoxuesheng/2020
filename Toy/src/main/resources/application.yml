@@ -28,3 +28,7 @@ log:
   path: /toy/logs
 server:
   port: 9999
+
+#swagger开启
+swagger
+  enble: true
