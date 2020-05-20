@@ -1,0 +1,31 @@
+要对文本文件的进行比较的时候，可以考虑使用google-diff-match-patch，它可以进行比较、匹配和生成补丁的操作，这里将展示一个简单文本比较的例子。
+首先我们必须接定好文本比较后的输出。假设我们有两段文本“123456789”和“012356889”，然后我们希望输出他们的“差异”，可是这个“差异”怎么表示呢？
+使用google diff的话，这个差异就是从左边的字符串变成右边的字符串所需要的最少的步骤，每个步骤只能做“保持不变”、“插入”或者“删除”操作，
+如果我们用的是替换操作呢？那么只能是先“删除”后“插入”。例如对我们说到的两个字符串的差异就是：
+[Java代码]
+1. 插入一个0  
+2. 保持123不变  
+3. 删除4  
+4. 保持56不变  
+5. 删除7  
+6. 插入8  
+7. 保持89不变
+google diff 使用起来很简单，只需要将它提供的diff_match_patch.java放在你的工程里，然后用它丰富的API就行了，例如对下面的代码：
+[Java代码]
+diff_match_patch dmp = new diff_match_patch();  
+List<Diff> list = dmp.diff_main("123456789", "012356889");  
+System.out.println(list);  
+
+控制台的输出就是：
+[Diff(INSERT,"0"), Diff(EQUAL,"123"), Diff(DELETE,"4"), Diff(EQUAL,"56"), Diff(DELETE,"7"), Diff(INSERT,"8"), Diff(EQUAL,"89")]
+
+工程还提供了一个Demo在这里： http://neil.fraser.name/software/diff_match_patch/svn/trunk/demos/demo_diff.html
+Tip1. 有的时候我们比较两个文件时，只想比较行级的区别，也就是说操作的单位是行而不是字符，这时该怎么做呢？
+http://code.google.com/p/google-diff-match-patch/wiki/LineOrWordDiffs 这里做了详细的介绍，并且介绍了怎样将操作的单位变为单词。
+ 
+Tip2. 有的时候我们的字符串看起来是一样的，但是换行符的不同会导致我们的字符串比较出现问题。这时候我们就需要看一下这些字符串的庐山真面目了，
+把他们转成Hex形式的字符串。其实操作很简单
+[Java代码]
+String.format("%x", new BigInteger(arg.getBytes(/*YOUR_CHARSET?*/))); 
+
+参见 http://stackoverflow.com/questions/923863/converting-a-string-to-hexadecimal-in-java
