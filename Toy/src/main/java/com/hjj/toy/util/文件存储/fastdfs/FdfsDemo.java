@@ -1,6 +1,6 @@
 package com.hjj.toy.util.文件存储.fastdfs;
 
-import org.csource.fastdfs.*;
+//import org.csource.fastdfs.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -14,6 +14,7 @@ import java.io.FileOutputStream;
      <version>1.27-SNAPSHOT</version>
     </dependency>
  */
+/**
 public class FdfsDemo {
 
     public static void main(String[] args) throws Exception{
@@ -41,3 +42,5 @@ public class FdfsDemo {
 
     }
 }
+
+*/

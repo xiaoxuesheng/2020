@@ -1,0 +1,34 @@
+针对不同场景把监控系统分为三类，分别是：
+1.日志类
+通常我们在系统和业务级别上加入一些日志代码，记录一些日志信息，方便我们在发现问题的时候查找。
+这些信息会与事件做相关，例如：用户登录，下订单，用户浏览某件商品，一小时以内的网关流量，用户平均响应时间等等。
+这类以日志的记录和查询的解决方案比较多。比如 ELK 方案（Elasticsearch+Logstash+Kibana），使用ELK（Elasticsearch、Logstash、Kibana）+Kafka/Redis/RabbitMQ 来搭建一个日志系统。
+程序内部通过 Spring AOP 记录日志，Beats 收集日志文件，然后用 Kafka/Redis/RabbitMQ 将其发送给 Logstash，Logstash 再将日志写入 Elasticsearch。
+最后，使用 Kibana 将存放在 Elasticsearch 中的日志数据显示出来，形式可以是实时数据图表。
+2.调用链类
+获取每次请求服务中的信息来实现跟踪的。这里以 Zipkin+Slueth 为例说明其原理。
+Sleuth 提供链路追踪。由于一个请求会涉及到多个服务的互相调用，而这种调用往往成链式结构，经过多次层层调用以后请求才会返回。常常使用 Sleuth 追踪整个调用过程，方便理清服务间的调用关系。
+每次请求都会生成一个 Trace ID，这个Trace ID在整个 Request 和 Response 过程中都会保持一致，不论经过了多少个服务。
+每经过一个请求的时候都会有一个 Span ID，这里的 Span 是 Sleuth 服务跟踪的最小单元，每经过一个服务，每次 Request 和 Response 这个值都会有所不同，这是为了区分不同的调用动作。
+
+针对每个调用的动作，Sleuth 都做了标示如下：
+Server Received 是服务器接受，也就是服务端接受到请求的意思。
+Client Sent 是客户端发送，也就是这个服务本身不提供响应，需要调用其他的服务提供该响应，所以这个时候是作为客户端发起请求的。
+Server Sent 是服务端发送，看上图SERVICE 3 收到请求后，由于他是最终的服务提供者，所以作为服务端，他需要把请求发送给调用者。
+Client Received 是客户端接受，作为发起调用的客户端接受到服务端返回的请求。
+实际上 Sleuth 就是通过上述方式把每次请求记录一个统一的 Trace ID，每个请求的详细步骤记作 Span ID。
+每次发起请求或者接受请求的状态分别记录成 Server Received，Client Sent，Server Sent，Client Received 四种状态来完成这个服务调用链路的跟踪的。
+在调用服务的链路上每个被调用的服务节点都会通过 Parent ID 来记录发起调用服务的 Span ID，由于 Span ID 是唯一确认最小服务单元的，所以知道了 Parent 的 Span ID 也就知道了谁调用自己了。
+
+3.指标度量类
+实现了时序数据库（TimeSeriesData，TSD）的监控方案。
+时序数据库的存储原理，关系型数据库存储采用的是 B tree，虽然降低了数据查询的磁盘寻道时间，但是无法解决大量数据写入时的磁盘效率。
+由于监控系统的应用场景，经常会遇到大批量的数据写入，所以我们会选择 LSMtree（Log Structured Merge Tree）存储时序数据库。
+LSMtree（Log Structured Merge Tree），从字面意义上理解，记录的数据按照日志结构（Log Structured）追加到系统中，然后通过合并树（Merge Tree）的方式将其合并。
+
+监控点分为五层来考虑
+客户端监控，用户行为信息，业务返回码，客户端性能，运营商，版本，操作系统等。
+业务层监控，核心业务的监控，例如：登录，注册，下单，支付等等。
+应用层监控，相关的技术参数，例如：URL 请求次数，Service 请求数量，SQL 执行的结果，Cache 的利用率，QPS 等等。
+系统层监控，物理主机，虚拟主机以及操作系统的参数。例如：CPU 利用率，内存利用率，磁盘空间情况。
+网络层监控，网络情况参数。例如：网关流量情况，丢包率，错包率，连接数等等。

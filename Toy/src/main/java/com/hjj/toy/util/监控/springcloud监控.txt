@@ -1,4 +1,0 @@
-spring-boot-admin
-
-skywalking-监控服务，调用链路追踪
-
