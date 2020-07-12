@@ -1,9 +1,0 @@
-
-延迟任务通过消息的TTL和Dead Letter Exchange来实现。我们需要建立2个队列，一个用于发送消息，一个用于消息过期后的转发目标队列。
-生产者生产一条延时消息，根据需要延时时间的不同，利用不同的routingkey将消息路由到不同的延时队列，每个队列都设置了不同的TTL属性，并绑定在同一个死信交换机中，消息过期后，根据routingkey的不同，又会被路由到不同的死信队列中，消费者只需要监听对应的死信队列进行处理即可。
----------------------------------
-在 RabbitMQ 3.6.x 之前我们一般采用死信队列(DLX)+TTL过期时间来实现延迟队列，我们这里不做过多介绍，可以参考其他道友的：TTL+DLX实现方式。
-
-在 RabbitMQ 3.6.x开始(现在都3.8.+了)，RabbitMQ 官方提供了延迟队列的插件，可以下载放置到 RabbitMQ 根目录下的 plugins 下。
-运行：
-rabbitmq-plugins enable rabbitmq_delayed_message_exchange

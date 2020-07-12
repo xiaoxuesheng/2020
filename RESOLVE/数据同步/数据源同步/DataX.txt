@@ -1,7 +1,0 @@
-DataX 是阿里巴巴集团内被广泛使用的离线数据同步工具/平台，实现包括 MySQL、Oracle、SqlServer、Postgre、HDFS、Hive、ADS、HBase、TableStore(OTS)、MaxCompute(ODPS)、DRDS 等各种异构数据源之间高效的数据同步功能。
-
-核心组件：
-Reader：数据采集模块，负责从源采集数据
-Writer：数据写入模块，负责写入目标库
-Framework：数据传输通道，负责处理数据缓冲等
-以上只需要重写Reader与Writer插件，即可实现新数据源支持

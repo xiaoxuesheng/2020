@@ -1,2 +1,0 @@
-反爬虫/接口防盗刷
-https://gitee.com/kekingcn/kk-anti-reptile

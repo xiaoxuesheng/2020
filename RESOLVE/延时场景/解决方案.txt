@@ -1,4 +1,0 @@
-1.JDK DelayQueue
-2.RabbitMQ-消息时限和死信队列
-3.zookeeper的curator
-4.redis的有序集合(zset)

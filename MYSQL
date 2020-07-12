@@ -1,3 +1,12 @@
+MYSQL性能优化
+1.时间存储datetime、timestamp、bigint比较
+在InnoDB存储引擎下，通过时间范围查找，性能bigint > datetime > timestamp
+在InnoDB存储引擎下，通过时间排序，性能bigint > timestamp > datetime
+如果需要对时间字段进行操作(如通过时间范围查找或者排序等)，推荐使用bigint，如果时间字段不需要进行任何操作，推荐使用timestamp，使用4个字节保存比较节省空间，但是只能记录到2038年记录的时间有限
+2.查询是否存在
+不用select count(*) ...;
+用 select 1 ... limit 1;
+
 MYSQL 特性
 8.0.0
 1.默认字符集由latin1变为utf8mb4
@@ -11,3 +20,6 @@ select ... for update，select ... for share(8.0新增语法) 添加 NOWAIT、SK
 
 8.0.20
 1.hash join ：缓存join数据，速度快
+
+
+

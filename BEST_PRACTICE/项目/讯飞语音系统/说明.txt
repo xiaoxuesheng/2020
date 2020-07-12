@@ -1,0 +1,3 @@
+简介：讯飞语音JavaWeb语音合成解决方案。
+
+项目地址：https://gitee.com/52itstyle/xufei_msc

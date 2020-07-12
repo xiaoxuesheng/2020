@@ -1,0 +1,91 @@
+1.实现方案对比
+基于AOP（切面）传统的实现方案
+优点：实现思路简单；
+缺点：增加数据库的负担，强依赖前端的传参，不方便拓展，不支持批量操作，不支持多表关联；
+
+基于数据库Binlog
+优点：解除了数据新旧变化的耦合，支持批量操作，方便多表关联拓展，不依赖开发语言；
+缺点：数据库表设计需要统一的约定；
+
+方案实现细节
+一、基于AOP切面+注解的传统方案
+传统的做法就是切面+注解的方式，这种对代码的侵入性不强，通常记录ip、业务模块、操作账号、操作场景、操作来源等等，一般在注解+拦截器里这些值都拿得到，
+存在的问题：
+1.旧值如果不多查询一次数据库则需要依赖前端把旧值封装到oldData对象中，很有可能已经不是修改前的值；
+2.无法处理批量的List数据；
+3.不支持多表操作
+
+二、基于数据库Binlog 方案
+系统架构图如下：
+{Photo_1}
+
+「主要分为3块：」
+1：业务应用 生成每次操作的traceid，并更新到操作的业务表中，发送1条业务消息，包含当前操作的操作人相关的信息；
+2：日志收集应用 对业务日志和转换后的binlog日志做整合，提供对外的日志查询搜索API；
+3：日志处理应用
+利用canal采集和解析业务库的binlog日志并投递到kafka中，解析后的记录中记录了当前操作的操作类型，如属于删除、修改、新增,和新旧值的记录，格式如下：
+
+{"data":[{"id":"122158992930664499","bill_type":"1","create_time":"2020-04-2609:15:13","update_time":"2020-04-2613:45:46","version":"2","trace_id":"exclude-f04ff706673d4e98a757396efb711173"}],
+"database":"yl_spmibill_8",
+"es":1587879945200,
+"id":17161259,
+"isDdl":false,
+"mysqlType":{"id":"bigint(20)",
+"bill_type":"tinyint(2)",
+"create_time":"timestamp",
+"update_time":"timestamp",
+"version":"int(11)",
+"trace_id":"varchar(50)"},
+"old":[{"update_time":"2020-04-2613:45:45",
+"version":"1",
+"trace_id":"exclude-36aef98585db4e7a98f9694c8ef28b8c"}],
+"pkNames":["id"],"sql":"",
+"sqlType":{"id":-5,"bill_type":-6,"create_time":93,"update_time":93,"version":4,"trace_id":12},
+"table":"xxx_transfer_bill_117",
+"ts":1587879945698,"type":"UPDATE"}
+
+处理完binlon日志转换后的操作日志，如下：
+ {
+  "id":"120716921250250776",
+  "relevanceInfo":"XX0000097413282,",
+  "remark":"签收财务网点编码由【】改为【380000】，
+  签收网点名称由【】改为【泉州南安网点】，签收网点code由【】改为【2534104】，运单状态code由【204】改为【205】，签收财务网点名称由【】改为【福建代理区】，签收网点id由【0】改为【461】，签收标识,1是，0否由【0】改为【1】，签收时间由【null】改为【2020-04-24 21:09:47】，签收财务网点id由【0】改为【400】，",
+  "traceId":"120716921250250775"
+  }
+  
+ 库表设计
+1：所有业务系统表需要添加trace_id字段，每次操作生成一个随机字符串并保存到业务表中；
+2：日志收集应用库表设计
+   CREATE TABLE `table_config` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `database_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '数据库名',
+  `table_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT ' 数据库表名',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unq_data_name_table_name` (`database_name`,`table_name`) USING BTREE COMMENT '数据库名表名联合索引'
+) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='数据库配置表';
+
+CREATE TABLE `table_field_config` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `table_config_id` bigint(20) DEFAULT NULL,
+  `field` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '字段 数据库',
+  `field_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '字段 中文名称',
+  `enum_flag` tinyint(2) DEFAULT NULL COMMENT '是否枚举字段(1:是,0:否)',
+  `relevance_flag` tinyint(2) DEFAULT NULL COMMENT '是否是关联字段(1:是,0否)',
+  `sort` int(11) DEFAULT NULL COMMENT '排序',
+  PRIMARY KEY (`id`),
+  KEY `idx_table_config_id` (`table_config_id`) USING BTREE COMMENT '表ID索引'
+) ENGINE=InnoDB AUTO_INCREMENT=2431 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='数据库字段配置表';
+
+CREATE TABLE `table_field_value` (
+  `id` bigint(20) NOT NULL,
+  `field_config_id` bigint(20) DEFAULT NULL,
+  `field_key` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT ' 枚举',
+  `filed_value` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '枚举名称',
+  PRIMARY KEY (`id`),
+  KEY `ids_field_config_id` (`field_config_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='数据字典配置表';
+如图 {photo_2}
+
+基于binlog实现方案未来规划
+优化发送业务消息的实现，使用切面拦截减少对业务代码的侵入；
+目前暂时不支持对多表关联操作日志记录，需要拓展；

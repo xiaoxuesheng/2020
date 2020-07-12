@@ -1,0 +1,63 @@
+软件产品的生命周期
+1.	问题定义
+2.	可行性研究
+3.	需求分析（阶段评审：需求评审）
+4.	产品设计（阶段评审：产品设计评审）
+5.	开发设计（阶段评审：开发设计评审）
+6.	编码实现（阶段评审：Review代码）
+7.	软件测试（阶段评审：测试用例评审）
+8.	产品验收与发布
+9.	发布后的产品维护
+
+Scrum相关概念
+1.	产品backlog: 产品待办列表，指需求清单
+2.	User Story: 用户故事，指一条需求
+3.	EPIC：比User Story更大一点的需求
+4.	Sprint：一个开发周期，或者一个迭代
+5.	Sprint backlog：Sprint 产品待办事项列表
+6.	Sprint Task：实现一条需求需要做的一个技术任务
+关系
+1.	（产品backlog）包含N个（User Story）
+2.	（Sprint backlog）包含N个（Sprint Task）
+3.	（User Story）对应N个（Sprint Task）
+User Story的产生是：问题定义，可行性研究，需求分析的结果
+Sprint Task产生是：产品设计的结果
+开发设计，编码实现，软件测试都是针对一个具体的Sprint Task来的
+而产品验收与发布（包括一部分测试）还是从一个User Story的角度来的
+
+jira的使用
+user story和sprint task关系
+1.如果是一对一，user story 和 sprint task 完全可以放在一个项目中作为一个问题（ticket）
+2.如果是一对多关系，user story 和 sprint task可以放在两个项目中
+1)产品项目
+2)开发项目
+为什么这么分：jira只支持一级的sub－task
+sprint task包含了开发设计，coding和测试
+测试会产生bug list，而每一个bug list，可以作为sub－task来实现bug的跟踪管理
+
+项目管理有哪些需求：
+1.查看全部的产品backlog（User Story）和Sprint backlog（Sprint Task）
+2.跟踪产品backlog或者Sprint backlog的整体状态
+a)当前产品backlog有多少User Story，优先级是什么样子的
+b)Sprint backlog有多少Sprint Task，优先级是什么样子的
+c)有多少User Story是产品设计完成状态
+d)当前Sprint 有多少待开发，开发中，或者测试中
+3.跟踪Sprint Task具体状态
+a)当前处于什么阶段
+b)有多少bug等着修复
+4.各个Sprint之间的项目或者任务量的对比分析
+5.User Story或者Sprint Task或者bug的各个阶段的负责人是谁
+6.User Story或者Sprint Task相关的文档资源在哪里
+
+jira中的对象
+1.Project（项目）
+
+2.Dashboard（仪表盘）
+
+3.Board（看板）
+
+4.Filter（满足一组查询条件的issue结果）
+
+5.Issue／Task／sub-task（问题或者任务）
+
+6.Gadgets（小工具: 一些chart，Statistics，filter result等等）
